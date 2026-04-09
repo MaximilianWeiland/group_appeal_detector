@@ -1,0 +1,21 @@
+[project]
+name = "group-appeal-detector"
+version = "0.1.0"
+description = "Automated detection of social group appeals in text"
+requires-python = ">=3.11"
+dependencies = [
+    "huggingface-hub>=0.23",
+    "matplotlib>=3.10.8",
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "safetensors>=0.4",
+    "scikit-learn>=1.8.0",
+    "torch>=2.0",
+    "transformers>=5.5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.14",
+]
