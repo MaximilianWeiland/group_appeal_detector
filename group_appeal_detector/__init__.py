@@ -1,11 +1,12 @@
 import logging
 import pandas as pd
 
-logging.getLogger("huggingface_hub").addFilter(
-    type("_HFUnauthFilter", (logging.Filter,), {
-        "filter": lambda self, r: "unauthenticated" not in r.getMessage().lower()
-    })()
-)
+# suppress HF warning against unauthenticated request
+_hf_filter = type("_HFUnauthFilter", (logging.Filter,), {
+    "filter": lambda self, r: "unauthenticated" not in r.getMessage().lower()
+})()
+logging.getLogger("huggingface_hub").addFilter(_hf_filter)
+logging.getLogger("huggingface_hub.utils._http").addFilter(_hf_filter)
 from .group_mention_detection import GroupMentionDetector
 from .stance_classification import StanceClassifier
 from .clustering import GroupMentionClusterer
