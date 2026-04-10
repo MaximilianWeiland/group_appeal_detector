@@ -1,7 +1,7 @@
 import re
 import numpy as np
 import pandas as pd
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoConfig, AutoModel, AutoTokenizer
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from sklearn.cluster import KMeans
@@ -42,7 +42,8 @@ class ModelMask(nn.Module):
             None
         """
         super().__init__()
-        self.encoder: nn.Module = AutoModel.from_pretrained(pretrained_model_name)
+        _config = AutoConfig.from_pretrained(pretrained_model_name)
+        self.encoder: nn.Module = AutoModel.from_config(_config)
         self.mask_id: int = tokenizer.mask_token_id
         self.proj_dim: int = proj_dim
         self.hidden_size: int = self.encoder.config.hidden_size
