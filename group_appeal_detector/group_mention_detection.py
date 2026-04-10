@@ -16,6 +16,8 @@ class GroupMentionDetector:
         )
 
     def detect(self, text: str) -> list[dict]:
+        if not isinstance(text, str):
+            raise TypeError(f"Expected a string, got {type(text).__name__}.")
         return self._pipeline(text)
 
     def detect_batch(self, texts: list[str], batch_size: int = 32) -> list[list[dict]]:

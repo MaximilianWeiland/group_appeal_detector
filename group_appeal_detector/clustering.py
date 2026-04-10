@@ -6,7 +6,6 @@ from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, normalized_mutual_info_score
-from collections import defaultdict
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

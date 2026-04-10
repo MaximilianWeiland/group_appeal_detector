@@ -13,6 +13,10 @@ class StanceClassifier:
         self.model.to(self.device)
 
     def classify(self, text: str, target_group: str) -> tuple[str, dict[str, float]]:
+        if not isinstance(text, str):
+            raise TypeError(f"Expected a string for text, got {type(text).__name__}.")
+        if not isinstance(target_group, str):
+            raise TypeError(f"Expected a string for target_group, got {type(target_group).__name__}.")
         hypotheses = [
             f"The text is positive towards {target_group}.",
             f"The text is negative towards {target_group}.",

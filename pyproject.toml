@@ -19,3 +19,9 @@ dev = [
     "pytest>=8.0",
     "pytest-mock>=3.14",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.setuptools.packages.find]
+include = ["group_appeal_detector*"]
