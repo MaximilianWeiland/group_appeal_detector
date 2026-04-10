@@ -1,7 +1,11 @@
-import warnings
+import logging
 import pandas as pd
 
-warnings.filterwarnings("ignore", message=".*unauthenticated.*", module="huggingface_hub")
+logging.getLogger("huggingface_hub").addFilter(
+    type("_HFUnauthFilter", (logging.Filter,), {
+        "filter": lambda self, r: "unauthenticated" not in r.getMessage().lower()
+    })()
+)
 from .group_mention_detection import GroupMentionDetector
 from .stance_classification import StanceClassifier
 from .clustering import GroupMentionClusterer
