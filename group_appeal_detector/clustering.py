@@ -55,8 +55,9 @@ class ModelMask(nn.Module):
             hidden_states: Tensor
     ) -> Tensor:
         """
-        Extracts a sentence-level embedding by averaging hidden states at all [MASK] token positions.
-
+        Extracts a sentence-level embedding by using the hidden state at the [MASK] token position.
+        If several [MASK] tokens, it averages the hidden states at all positions.
+        
         Args:
             input_ids (Tensor): Token IDs of shape (batch_size, seq_len).
             hidden_states (Tensor): Hidden states of shape (batch_size, seq_len, hidden_size).
@@ -68,10 +69,14 @@ class ModelMask(nn.Module):
         batch_size = input_ids.size(0)
 
         outputs: list[Tensor] = []
+
+        # loop through rows inside the batch and find all positions of MASK tokens
         for i in range(batch_size):
             positions = mask_positions[i]
+            # take the mean of hidden states at MASK positions
             if positions.any():
                 emb = hidden_states[i][positions].mean(dim=0)
+            # if no MASK tokens, take the hidden state of the first token
             else:
                 emb = hidden_states[i][0]
             outputs.append(emb)
@@ -95,6 +100,7 @@ class ModelMask(nn.Module):
                 - h: Raw mask-based embeddings of shape (batch_size, hidden_size)
                 - z: L2-normalized projected embeddings of shape (batch_size, proj_dim)
         """
+        # run tokenized text through the BERT model and the linear projection head
         outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
         h: Tensor = self._extract_mask_embedding(input_ids, outputs.last_hidden_state)
         z: Tensor = self.projector(h)
@@ -107,19 +113,37 @@ class GroupMentionClusterer:
     _REPO_ID = "maxwlnd/cl_mention_embedding"
 
     def __init__(self, mentions: list[str], device: str = "cpu"):
+        """Initializes the clusterer by loading the embedding model.
 
+        Args:
+            mentions: A list of social group mention strings to cluster.
+            device: The device to run inference on. Either ``cpu``, ``cuda``,
+                or ``mps``.
+        """
         self.mentions = mentions
         self.device = torch.device(device)
 
+        # construct the model class
         self.tokenizer = AutoTokenizer.from_pretrained(self._REPO_ID)
         self.model = ModelMask(tokenizer=self.tokenizer)
 
+        # load all fine-tuned weigths inside the model
         checkpoint_path = hf_hub_download(self._REPO_ID, "model.safetensors")
         self.model.load_state_dict(load_file(checkpoint_path))
         self.model.to(self.device)
         self.model.eval()
 
     def embed(self, max_len: int = 32, batch_size: int = 32) -> Tensor:
+        """Computes and caches L2-normalized embeddings for all mentions.
+
+        Args:
+            max_len: Maximum token length for the input template.
+            batch_size: Number of mentions encoded at once.
+
+        Returns:
+            A tensor of shape ``(n_mentions, 128)`` containing the embeddings.
+        """
+        # just load the embeddings if they have already been computed
         if hasattr(self, "_embeddings"):
             return self._embeddings
 
@@ -128,6 +152,7 @@ class GroupMentionClusterer:
 
         with torch.no_grad():
             for start in range(0, len(self.mentions), batch_size):
+                # run all mentions through the template and tokenize them
                 batch_texts = [
                     f"Social group of {m} is: {mask_token}."
                     for m in self.mentions[start:start + batch_size]
@@ -141,6 +166,7 @@ class GroupMentionClusterer:
                 )
                 input_ids = enc['input_ids'].to(self.device)
                 attention_mask = enc['attention_mask'].to(self.device)
+                # run the input tokens through the model and append the normalized embedding
                 _, z = self.model.encode(input_ids, attention_mask)
                 all_embeddings.append(z.cpu())
 
@@ -148,11 +174,27 @@ class GroupMentionClusterer:
         return self._embeddings
 
     def find_optimal_k(self, k_range: tuple[int, int] = (2, 30), metric: str = "silhouette", dictionary_df: pd.DataFrame | None = None, visualize: bool = True) -> tuple[int, list[float]]:
+        """Finds the optimal number of clusters by maximizing a validation metric.
 
+        Args:
+            k_range: The range of k values to evaluate, inclusive.
+            metric: Validation metric to use. Either ``silhouette`` (internal)
+                or ``nmi`` (external, requires ``dictionary_df``).
+            dictionary_df: A DataFrame where each column is a social group
+                category and each row contains example terms. Required when
+                ``metric='nmi'``.
+            visualize: If ``True``, plots the metric scores across k values.
+
+        Returns:
+            A tuple of the best k and a list of scores for each evaluated k.
+
+        Raises:
+            ValueError: If ``metric='nmi'`` and ``dictionary_df`` is not provided.
+        """
         # compute the embeddings
         embeddings = self.embed().numpy()
 
-        # precompute dictionary matches once if NMI is requested
+        # precompute dictionary matches if NMI is requested
         if metric == "nmi":
             if dictionary_df is None:
                 raise ValueError("dictionary_df is required when metric='nmi'")
@@ -161,6 +203,7 @@ class GroupMentionClusterer:
             dict_mask = np.array([in_dict for in_dict, _ in matches])
             dict_categories = np.array([cat for _, cat in matches])[dict_mask]
 
+        # loop through potential ks, create k-means clustering and compute either silhouette or NMI-score
         scores = {}
         for k in range(k_range[0], k_range[1] + 1):
             labels = KMeans(n_clusters=k, random_state=42, n_init="auto").fit_predict(embeddings)
@@ -169,8 +212,10 @@ class GroupMentionClusterer:
             elif metric == "nmi":
                 scores[k] = normalized_mutual_info_score(dict_categories, labels[dict_mask])
 
+        # take the k that produces the best score
         best_k = max(scores, key=scores.__getitem__)
 
+        # visualize score development as a line-chart if specified
         if visualize:
             ks = list(scores.keys())
             score_values = list(scores.values())
@@ -188,13 +233,34 @@ class GroupMentionClusterer:
 
 
     def cluster(self, n_clusters: int, as_df: bool = False) -> list[dict] | pd.DataFrame:
+        """Clusters the mentions into k groups using k-means.
+
+        Args:
+            n_clusters: The number of clusters to produce.
+            as_df: If ``True``, returns a pandas DataFrame instead of a list.
+
+        Returns:
+            A list of dicts with keys ``mention`` and ``cluster_id``,
+            or a DataFrame if ``as_df=True``.
+        """
         embeddings = self.embed().numpy()
+
+        # run k-means clustering and store the cluster ids paired with the mention
         labels = KMeans(n_clusters=n_clusters, random_state=42, n_init="auto").fit_predict(embeddings)
         results = [{"mention": m, "cluster_id": int(l)} for m, l in zip(self.mentions, labels)]
         return to_dataframe(results) if as_df else results
 
 
 def _normalize_group_name(name: str) -> str:
+    """
+    Normalizes the group name of a social group category to be able to be used by a combined regular expression pattern.
+
+    Args:
+        name: The social group name as provided in the dictionary column.
+
+    Returns:
+        The new social group category name as a string.
+    """
     name = name.strip()
     name = re.sub(r'\W+', '_', name)
     if name[0].isdigit():
@@ -228,7 +294,6 @@ def _create_category_regex(dictionary_df: pd.DataFrame) -> re.Pattern:
     # dictionary to map safe group name to original category name
     group_to_category: dict[str, str] = {}
 
-    # loop over all dictionary categories
     for category in dictionary_df.columns:
 
         # normalize group name and append to dictionary

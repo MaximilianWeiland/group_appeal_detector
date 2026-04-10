@@ -16,6 +16,7 @@ class GroupMentionDetector:
         )
 
     def detect(self, text: str) -> list[dict]:
+        # raise TypeError if no string is provided
         if not isinstance(text, str):
             raise TypeError(f"Expected a string, got {type(text).__name__}.")
         return self._pipeline(text)
