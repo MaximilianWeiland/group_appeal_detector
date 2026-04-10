@@ -1,6 +1,6 @@
 [project]
 name = "group-appeal-detector"
-version = "0.1.1"
+version = "0.1.2"
 description = "Automated detection of social group appeals in text"
 authors = [{ name = "Maximilian Weiland" }]
 readme = "README.md"
