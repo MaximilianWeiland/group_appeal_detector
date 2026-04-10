@@ -2,8 +2,17 @@
 name = "group-appeal-detector"
 version = "0.1.0"
 description = "Automated detection of social group appeals in text"
+authors = [{ name = "Maximilian Weiland" }]
+readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
+keywords = ["nlp", "political-science", "stance-detection", "group-mention", "text-classification"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
 dependencies = [
     "huggingface-hub>=0.23",
     "matplotlib>=3.10.8",
@@ -21,8 +30,16 @@ dev = [
     "pytest-mock>=3.14",
 ]
 
+[project.urls]
+Repository = "https://github.com/MaximilianWeiland/group_appeal_detector"
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 
 [tool.setuptools.packages.find]
 include = ["group_appeal_detector*"]
+
+[dependency-groups]
+dev = [
+    "build>=1.4.2",
+]
