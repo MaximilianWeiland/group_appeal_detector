@@ -91,8 +91,7 @@ results_df.head()
 Cluster detected group mentions into categories using `GroupMentionClusterer`. It performs k-means clustering on vector representations produced by a BERT model fine-tuned via contrastive learning to maximize separability between different social groups. Set `n_clusters`to the number of clusters the algorithm should produce.
 
 ```python
-from group_appeal_detector import GroupAppealDetector
-from group_appeal_detector.clustering import GroupMentionClusterer
+from group_appeal_detector import GroupAppealDetector, GroupMentionClusterer
 
 # collect mentions from a corpus
 texts = [...]
