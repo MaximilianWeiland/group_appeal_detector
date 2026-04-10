@@ -1,6 +1,6 @@
 [project]
 name = "group-appeal-detector"
-version = "0.1.0"
+version = "0.1.1"
 description = "Automated detection of social group appeals in text"
 authors = [{ name = "Maximilian Weiland" }]
 readme = "README.md"
@@ -42,4 +42,5 @@ include = ["group_appeal_detector*"]
 [dependency-groups]
 dev = [
     "build>=1.4.2",
+    "twine>=6.2.0",
 ]

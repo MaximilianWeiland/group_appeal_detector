@@ -1,4 +1,7 @@
+import warnings
 import pandas as pd
+
+warnings.filterwarnings("ignore", message=".*unauthenticated.*", module="huggingface_hub")
 from .group_mention_detection import GroupMentionDetector
 from .stance_classification import StanceClassifier
 from .clustering import GroupMentionClusterer
