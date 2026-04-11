@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/group-appeal-detector)](https://pypi.org/project/group-appeal-detector/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-This Python package detects social group mentions in text and classifies the author's stance toward each group as positive, negative, or neutral via fine-tuned BERT models. It also supports grouping a number of appeals into qualitative categories by performing k-means clustering on the appeals' vector representations.
+This Python package detects social group mentions in text and classifies the author's stance toward each group as positive, negative, or neutral via fine-tuned BERT models. It also supports grouping appeals into qualitative categories by performing k-means clustering on the appeals' vector representations.
 
 ## Installation
 
