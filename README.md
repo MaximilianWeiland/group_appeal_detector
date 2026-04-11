@@ -159,7 +159,7 @@ A **social group** is a segment of society or a collection of people who share c
 
 A RoBERTa-base token classification model fine-tuned on 5,000 manually annotated sentences drawn from parliamentary debates in the UK House of Commons (2010–2019). The training set was augmented with 25% synthetic paraphrases and trained using the BIO tagging scheme.
 
-Cross-validated performance on seqeval (95% confidence intervals in brackets):
+Cross-validated performance on seqeval (95% confidence intervals based on the estimated standard error across folds in brackets):
 
 | Seqeval-Metric    | Score       |
 |-------------------|-------------|
@@ -173,7 +173,7 @@ A DeBERTa-v3-base NLI model fine-tuned for social group stance classification, b
 
 For each detected group mention, three hypotheses are formulated: positive, negative, and neutral. The model chooses the class with the largest entailment probability as the predicted stance.
 
-Cross-validated performance (95% confidence intervals in brackets):
+Cross-validated performance (95% confidence intervals based on the estimated standard error across folds in brackets):
 
 | Metric    | Negative          | Neutral           | Positive          | Macro-Avg.        |
 |-----------|-------------------|-------------------|-------------------|-------------------|
