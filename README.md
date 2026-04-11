@@ -1,5 +1,10 @@
 # Group Appeal Detector
 
+[![Tests](https://github.com/MaximilianWeiland/group_appeal_detector/actions/workflows/tests.yml/badge.svg)](https://github.com/MaximilianWeiland/group_appeal_detector/actions/workflows/tests.yml)
+[![PyPI](https://img.shields.io/pypi/v/group-appeal-detector)](https://pypi.org/project/group-appeal-detector/)
+[![Python](https://img.shields.io/pypi/pyversions/group-appeal-detector)](https://pypi.org/project/group-appeal-detector/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 This Python package detects social group mentions in text and classifies the author's stance toward each group as positive, negative, or neutral via fine-tuned BERT models. It also supports grouping a number of appeals into qualitative categories by performing k-means clustering on the appeals' vector representations.
 
 ## Installation
@@ -42,8 +47,8 @@ for r in results:
 # classify a batch of sentences
 sentence_1 = "Farmers must earn more money."
 sentence_2 = "The government must do more to protect the women living in this country."
-batch = [sentence_1, sentence_2]
-results_df = detector.detect_mentions_batch(batch, batch_size=8, as_df=True)
+sentences = [sentence_1, sentence_2]
+results_df = detector.detect_mentions_batch(sentences, batch_size=8, as_df=True)
 results_df.head()
 ```
 
@@ -81,8 +86,8 @@ for r in results:
 # classify a batch of sentences
 sentence_1 = "Farmers must earn more money."
 sentence_2 = "The government must do more to protect the women living in this country."
-batch = [sentence_1, sentence_2]
-results_df = detector.detect_batch(batch, batch_size=8, as_df=True)
+sentences = [sentence_1, sentence_2]
+results_df = detector.detect_batch(sentences, batch_size=8, as_df=True)
 results_df.head()
 ```
 
@@ -120,9 +125,9 @@ results_df = clusterer.cluster(n_clusters=best_k, as_df=True)
 results_df.head()
 ```
 
-Alternatively, if a reference dictionary of known social group categories is available, the optimal `k` can be determined by maximizing the Normalized Mutual Information (NMI) score between cluster assignments and dictionary-based category labels. Pass the dictionary as a pandas DataFrame where each column represents a category and each row contains example terms. The method then finds all group mentions that match any example term and computes the NMI-score based on the known social group categories of the detected terms and the cluster assignments.
+Alternatively, if a reference dictionary of known social group categories is available, the optimal `k` can be determined by maximizing the Normalized Mutual Information (NMI) score between cluster assignments and dictionary-based category labels. Pass the dictionary as a pandas DataFrame where each column represents a category and each row contains example terms. The method then finds all group mentions that match any example term and computes the NMI-score based on the known social group categories of the detected terms and the cluster assignments for these terms.
 
-By maximizing the NMI-score one maximizes the reproducibility of the known social group categories within the data. Users can also decide based on both the silhouette and NMI-score in order to balance both internal and external validation metrics.
+By maximizing the NMI-score one maximizes the reproducibility of the known social group categories within the data while still being able to detect new categories. Users can also decide based on both the silhouette and NMI-score in order to balance both internal and external validation metrics.
 
 ```python
 import pandas as pd
@@ -144,7 +149,7 @@ results_df.head()
 
 ## Conceptual Background
 
-The definitions used in this package are largely inspired by [Lena Maria Huber and Alona O. Dolinsky](https://osf.io/preprints/osf/szaqw_v1) and [Will Horne, Alona O. Dolinsky and Lena Maria Huber](https://osf.io/preprints/osf/fp2h3_v3).
+The definitions of a social group and a social group appeal used for annotating the training data package are largely inspired by [Lena Maria Huber and Alona O. Dolinsky](https://osf.io/preprints/osf/szaqw_v1) and [Will Horne, Alona O. Dolinsky and Lena Maria Huber](https://osf.io/preprints/osf/fp2h3_v3).
 
 A **social group** is a segment of society or a collection of people who share common sociodemographic traits or attributes that are ascriptive and/or acquired. A reference to a social group in text is called a **group mention**. A **group appeal** is an intentional act that associates a political actor with a social group in either a supportive or critical manner.
 
@@ -154,10 +159,10 @@ A **social group** is a segment of society or a collection of people who share c
 
 A RoBERTa-base token classification model fine-tuned on 5,000 manually annotated sentences drawn from parliamentary debates in the UK House of Commons (2010–2019). The training set was augmented with 25% synthetic paraphrases and trained using the BIO tagging scheme.
 
-Cross-validated performance (95% confidence intervals in brackets):
+Cross-validated performance on seqeval (95% confidence intervals in brackets):
 
-| Metric    | Score       |
-|-----------|-------------|
+| Seqeval-Metric    | Score       |
+|-------------------|-------------|
 | F1        | 0.82 [0.82, 0.83] |
 | Precision | 0.80 [0.79, 0.81] |
 | Recall    | 0.84 [0.83, 0.85] |
