@@ -169,9 +169,7 @@ Cross-validated performance on seqeval (95% confidence intervals based on the es
 
 ### Stance Classification — [`maxwlnd/socialgroup_stance_classification_nli`](https://huggingface.co/maxwlnd/socialgroup_stance_classification_nli)
 
-A DeBERTa-v3-base NLI model fine-tuned for social group stance classification, built on top of [MoritzLaurer/deberta-v3-base-zeroshot-v2.0](https://huggingface.co/MoritzLaurer/deberta-v3-base-zeroshot-v2.0). The zero-shot classifier got further fine-tuned based on the social group mentions manually detected in 5,000 sentences drawn from parliamentary debates in the UK House of Commons (2010–2019). The negative class was oversampled by adding synthetic paraphrases for half of all negative social group appeals.
-
- of 25% of all sentences with group mentions. 
+A DeBERTa-v3-base NLI model fine-tuned for social group stance classification, built on top of [MoritzLaurer/deberta-v3-base-zeroshot-v2.0](https://huggingface.co/MoritzLaurer/deberta-v3-base-zeroshot-v2.0). The zero-shot classifier got further fine-tuned based on the social group mentions manually detected in 5,000 sentences drawn from parliamentary debates in the UK House of Commons (2010–2019). The negative class was oversampled by adding synthetic paraphrases for half of all negative social group appeals. 
 
 For each detected group mention, three hypotheses are formulated: positive, negative, and neutral. The model chooses the class with the largest entailment probability as the predicted stance.
 
