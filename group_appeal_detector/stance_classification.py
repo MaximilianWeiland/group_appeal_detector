@@ -17,8 +17,10 @@ class StanceClassifier:
         if not isinstance(text, str):
             raise TypeError(f"Expected a string for text, got {type(text).__name__}.")
         if not isinstance(target_group, str):
-            raise TypeError(f"Expected a string for target_group, got {type(target_group).__name__}.")
-        
+            raise TypeError(
+                f"Expected a string for target_group, got {type(target_group).__name__}."
+            )
+
         # construct hypotheses for each stance class
         hypotheses = [
             f"The text is positive towards {target_group}.",
@@ -44,8 +46,10 @@ class StanceClassifier:
         stance_probs = dict(zip(self._STANCES, entail_probs))
         predicted_stance = max(stance_probs, key=stance_probs.__getitem__)
         return predicted_stance, stance_probs
-    
-    def classify_batch(self, pairs: list[tuple[str, str]], batch_size: int = 32) -> list[tuple[str, dict[str, float]]]:
+
+    def classify_batch(
+        self, pairs: list[tuple[str, str]], batch_size: int = 32
+    ) -> list[tuple[str, dict[str, float]]]:
         """
         Classify stance for a list of (text, target_group) pairs.
         Each pair produces 3 NLI inputs, so effective batch size is batch_size * 3.
@@ -54,7 +58,7 @@ class StanceClassifier:
         results = []
         for i in range(0, len(pairs), batch_size):
             # construct the batch manually
-            batch = pairs[i:i + batch_size]
+            batch = pairs[i : i + batch_size]
             all_texts, all_hypotheses = [], []
             # store replicated texts and hypotheses in lists and tokenize
             for text, target_group in batch:
@@ -81,9 +85,9 @@ class StanceClassifier:
 
             # loop through all sentences inside the batch and take stance class with highest entailment prob
             for j in range(len(batch)):
-                probs = entail_probs[j * 3:(j + 1) * 3]
+                probs = entail_probs[j * 3 : (j + 1) * 3]
                 stance_probs = dict(zip(self._STANCES, probs))
                 predicted_stance = max(stance_probs, key=stance_probs.__getitem__)
                 results.append((predicted_stance, stance_probs))
-                
+
         return results

@@ -3,7 +3,7 @@ import pandas as pd
 
 from .group_mention_detection import GroupMentionDetector
 from .stance_classification import StanceClassifier
-from .clustering import GroupMentionClusterer
+from .clustering import GroupMentionClusterer as GroupMentionClusterer
 from .utils import to_dataframe
 
 # ignore huggingface warnings
@@ -38,7 +38,9 @@ class GroupAppealDetector:
             for m in self._mention_detector.detect(text)
         ]
 
-    def detect_mentions_batch(self, texts: list[str], batch_size: int = 32, as_df: bool = False) -> list[list[dict]] | pd.DataFrame:
+    def detect_mentions_batch(
+        self, texts: list[str], batch_size: int = 32, as_df: bool = False
+    ) -> list[list[dict]] | pd.DataFrame:
         """Detects social group mentions in a batch of texts.
 
         Args:
@@ -51,8 +53,13 @@ class GroupAppealDetector:
             ``start``, and ``end``, or a DataFrame if ``as_df=True``.
         """
         results = [
-            [{"span": m["word"], "start": m["start"], "end": m["end"]} for m in mentions]
-            for mentions in self._mention_detector.detect_batch(texts, batch_size=batch_size)
+            [
+                {"span": m["word"], "start": m["start"], "end": m["end"]}
+                for m in mentions
+            ]
+            for mentions in self._mention_detector.detect_batch(
+                texts, batch_size=batch_size
+            )
         ]
         return to_dataframe(results) if as_df else results
 
@@ -71,10 +78,14 @@ class GroupAppealDetector:
         Raises:
             TypeError: If ``text`` or ``target_group`` is not a string.
         """
-        predicted_stance, stance_probs = self._stance_classifier.classify(text, target_group)
+        predicted_stance, stance_probs = self._stance_classifier.classify(
+            text, target_group
+        )
         return {"predicted_stance": predicted_stance, "stance_probs": stance_probs}
 
-    def classify_stance_batch(self, pairs: list[tuple[str, str]], batch_size: int = 32, as_df: bool = False) -> list[dict] | pd.DataFrame:
+    def classify_stance_batch(
+        self, pairs: list[tuple[str, str]], batch_size: int = 32, as_df: bool = False
+    ) -> list[dict] | pd.DataFrame:
         """Classifies the author's stance for a batch of (text, group) tuple pairs.
 
         Args:
@@ -88,7 +99,9 @@ class GroupAppealDetector:
         """
         results = [
             {"predicted_stance": stance, "stance_probs": probs}
-            for stance, probs in self._stance_classifier.classify_batch(pairs, batch_size)
+            for stance, probs in self._stance_classifier.classify_batch(
+                pairs, batch_size
+            )
         ]
         return to_dataframe(results) if as_df else results
 
@@ -110,16 +123,20 @@ class GroupAppealDetector:
         # detect all mentions first and classify stances for these
         for mention in self.detect_mentions(text):
             stance_result = self.classify_stance(text, mention["span"])
-            results.append({
-                "span": mention["span"],
-                "start": mention["start"],
-                "end": mention["end"],
-                "stance": stance_result["predicted_stance"],
-                "stance_probs": stance_result["stance_probs"],
-            })
+            results.append(
+                {
+                    "span": mention["span"],
+                    "start": mention["start"],
+                    "end": mention["end"],
+                    "stance": stance_result["predicted_stance"],
+                    "stance_probs": stance_result["stance_probs"],
+                }
+            )
         return results
 
-    def detect_batch(self, texts: list[str], batch_size: int = 32, as_df: bool = False) -> list[list[dict]] | pd.DataFrame:
+    def detect_batch(
+        self, texts: list[str], batch_size: int = 32, as_df: bool = False
+    ) -> list[list[dict]] | pd.DataFrame:
         """Detects group mentions and classifies the stance toward each for a batch of texts.
 
         Args:
@@ -151,12 +168,14 @@ class GroupAppealDetector:
                 # extract the stance based on the index
                 stance, stance_probs = stances[idx]
                 idx += 1
-                sentence_results.append({
-                    "span": mention["span"],
-                    "start": mention["start"],
-                    "end": mention["end"],
-                    "stance": stance,
-                    "stance_probs": stance_probs,
-                })
+                sentence_results.append(
+                    {
+                        "span": mention["span"],
+                        "start": mention["start"],
+                        "end": mention["end"],
+                        "stance": stance,
+                        "stance_probs": stance_probs,
+                    }
+                )
             results.append(sentence_results)
         return to_dataframe(results) if as_df else results

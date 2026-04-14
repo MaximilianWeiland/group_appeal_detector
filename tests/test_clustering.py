@@ -16,6 +16,7 @@ from group_appeal_detector.clustering import (
 
 # --- _normalize_group_name ---
 
+
 def test_normalize_strips_whitespace():
     assert _normalize_group_name("  women  ") == "women"
 
@@ -30,9 +31,12 @@ def test_normalize_prepends_cat_if_starts_with_digit():
 
 # --- _create_category_regex / _match_dictionary ---
 
+
 @pytest.fixture
 def simple_dict_df():
-    return pd.DataFrame({"workers": ["workers", "laborers"], "students": ["students", None]})
+    return pd.DataFrame(
+        {"workers": ["workers", "laborers"], "students": ["students", None]}
+    )
 
 
 def test_match_dictionary_exact_match(simple_dict_df):
@@ -78,6 +82,7 @@ def test_match_dictionary_wildcard_prefix():
 
 # --- ModelMask._extract_mask_embedding ---
 
+
 @pytest.fixture
 def model_mask():
     model = ModelMask.__new__(ModelMask)
@@ -115,12 +120,15 @@ def test_extract_mask_embedding_output_shape(model_mask):
 
 # --- GroupMentionClusterer ---
 
+
 @pytest.fixture
 def clusterer():
-    with patch("group_appeal_detector.clustering.AutoTokenizer") as mock_tok_cls, \
-         patch("group_appeal_detector.clustering.ModelMask") as mock_model_cls, \
-         patch("group_appeal_detector.clustering.hf_hub_download") as mock_download, \
-         patch("group_appeal_detector.clustering.load_file"):
+    with (
+        patch("group_appeal_detector.clustering.AutoTokenizer") as mock_tok_cls,
+        patch("group_appeal_detector.clustering.ModelMask") as mock_model_cls,
+        patch("group_appeal_detector.clustering.hf_hub_download") as mock_download,
+        patch("group_appeal_detector.clustering.load_file"),
+    ):
         mock_tokenizer = MagicMock()
         mock_tokenizer.mask_token = "[MASK]"
         mock_tok_cls.from_pretrained.return_value = mock_tokenizer
@@ -186,10 +194,12 @@ def test_cluster_as_df(clusterer):
 
 def test_find_optimal_k_returns_best_k(clusterer):
     # Use clearly separable embeddings so silhouette reliably picks k=2
-    clusterer._embeddings = torch.cat([
-        torch.zeros(5, 4),
-        torch.ones(5, 4) * 100,
-    ])
+    clusterer._embeddings = torch.cat(
+        [
+            torch.zeros(5, 4),
+            torch.ones(5, 4) * 100,
+        ]
+    )
     with warnings.catch_warnings(), patch("group_appeal_detector.clustering.plt"):
         warnings.simplefilter("ignore", ConvergenceWarning)
         best_k, scores = clusterer.find_optimal_k(k_range=(2, 3), visualize=True)

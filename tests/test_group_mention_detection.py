@@ -9,16 +9,40 @@ PIPELINE_OUTPUT_SINGLE = [
 ]
 
 PIPELINE_OUTPUT_BATCH = [
-    [{"word": "workers", "start": 4, "end": 11, "entity_group": "GROUP", "score": 0.98}],
-    [{"word": "students", "start": 0, "end": 8, "entity_group": "GROUP", "score": 0.95}],
+    [
+        {
+            "word": "workers",
+            "start": 4,
+            "end": 11,
+            "entity_group": "GROUP",
+            "score": 0.98,
+        }
+    ],
+    [
+        {
+            "word": "students",
+            "start": 0,
+            "end": 8,
+            "entity_group": "GROUP",
+            "score": 0.95,
+        }
+    ],
 ]
 
 
 @pytest.fixture
 def detector():
-    with patch("group_appeal_detector.group_mention_detection.AutoTokenizer") as mock_tok, \
-         patch("group_appeal_detector.group_mention_detection.AutoModelForTokenClassification") as mock_model, \
-         patch("group_appeal_detector.group_mention_detection.pipeline") as mock_pipeline:
+    with (
+        patch(
+            "group_appeal_detector.group_mention_detection.AutoTokenizer"
+        ),
+        patch(
+            "group_appeal_detector.group_mention_detection.AutoModelForTokenClassification"
+        ),
+        patch(
+            "group_appeal_detector.group_mention_detection.pipeline"
+        ) as mock_pipeline,
+    ):
         mock_pipe_instance = MagicMock()
         mock_pipeline.return_value = mock_pipe_instance
         d = GroupMentionDetector(device="cpu")

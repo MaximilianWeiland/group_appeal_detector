@@ -1,7 +1,9 @@
 import pandas as pd
 
 
-def to_dataframe(results: list[dict] | list[list[dict]], text_idx: bool = True) -> pd.DataFrame:
+def to_dataframe(
+    results: list[dict] | list[list[dict]], text_idx: bool = True
+) -> pd.DataFrame:
     """Converts detection results to a pandas DataFrame.
 
     Accepts either a flat list of dicts or a nested list (one list per text).

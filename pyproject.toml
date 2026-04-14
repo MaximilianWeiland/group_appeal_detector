@@ -42,5 +42,6 @@ include = ["group_appeal_detector*"]
 [dependency-groups]
 dev = [
     "build>=1.4.2",
+    "ruff>=0.15.10",
     "twine>=6.2.0",
 ]

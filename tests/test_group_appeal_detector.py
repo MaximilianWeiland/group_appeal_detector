@@ -6,14 +6,17 @@ from group_appeal_detector import GroupAppealDetector
 
 @pytest.fixture
 def detector():
-    with patch("group_appeal_detector.GroupMentionDetector") as mock_gmd_cls, \
-         patch("group_appeal_detector.StanceClassifier") as mock_sc_cls:
+    with (
+        patch("group_appeal_detector.GroupMentionDetector") as mock_gmd_cls,
+        patch("group_appeal_detector.StanceClassifier") as mock_sc_cls,
+    ):
         mock_gmd_cls.return_value = MagicMock()
         mock_sc_cls.return_value = MagicMock()
         yield GroupAppealDetector(device="cpu")
 
 
 # --- detect_mentions() ---
+
 
 def test_detect_mentions_returns_span_start_end(detector):
     detector._mention_detector.detect.return_value = [
@@ -25,7 +28,13 @@ def test_detect_mentions_returns_span_start_end(detector):
 
 def test_detect_mentions_strips_extra_fields(detector):
     detector._mention_detector.detect.return_value = [
-        {"word": "farmers", "start": 0, "end": 7, "entity_group": "GROUP", "score": 0.97},
+        {
+            "word": "farmers",
+            "start": 0,
+            "end": 7,
+            "entity_group": "GROUP",
+            "score": 0.97,
+        },
     ]
     result = detector.detect_mentions("farmers are important.")
     assert all("score" not in m and "entity_group" not in m for m in result)
@@ -41,7 +50,9 @@ def test_detect_mentions_batch_returns_nested_list(detector):
         [{"word": "workers", "start": 4, "end": 11, "score": 0.98}],
         [],
     ]
-    result = detector.detect_mentions_batch(["The workers protested.", "No group here."])
+    result = detector.detect_mentions_batch(
+        ["The workers protested.", "No group here."]
+    )
     assert result == [[{"span": "workers", "start": 4, "end": 11}], []]
 
 
@@ -56,6 +67,7 @@ def test_detect_mentions_batch_as_df(detector):
 
 # --- classify_stance() ---
 
+
 def test_classify_stance_returns_predicted_stance_and_probs(detector):
     detector._stance_classifier.classify.return_value = (
         "positive",
@@ -66,7 +78,6 @@ def test_classify_stance_returns_predicted_stance_and_probs(detector):
         "predicted_stance": "positive",
         "stance_probs": {"positive": 0.9, "negative": 0.05, "neutral": 0.05},
     }
-
 
 
 def test_classify_stance_batch_returns_list_of_dicts(detector):
@@ -94,6 +105,7 @@ def test_classify_stance_batch_as_df(detector):
 
 # --- detect() ---
 
+
 def test_detect_combines_mentions_and_stances(detector):
     detector._mention_detector.detect.return_value = [
         {"word": "women", "start": 12, "end": 17, "score": 0.99},
@@ -103,13 +115,15 @@ def test_detect_combines_mentions_and_stances(detector):
         {"positive": 0.9, "negative": 0.05, "neutral": 0.05},
     )
     result = detector.detect("We support women.")
-    assert result == [{
-        "span": "women",
-        "start": 12,
-        "end": 17,
-        "stance": "positive",
-        "stance_probs": {"positive": 0.9, "negative": 0.05, "neutral": 0.05},
-    }]
+    assert result == [
+        {
+            "span": "women",
+            "start": 12,
+            "end": 17,
+            "stance": "positive",
+            "stance_probs": {"positive": 0.9, "negative": 0.05, "neutral": 0.05},
+        }
+    ]
 
 
 def test_detect_no_mentions_returns_empty_list(detector):
@@ -141,7 +155,9 @@ def test_detect_batch_returns_results_per_text(detector):
         ("positive", {"positive": 0.9, "negative": 0.05, "neutral": 0.05}),
         ("negative", {"positive": 0.05, "negative": 0.9, "neutral": 0.05}),
     ]
-    results = detector.detect_batch(["The workers protested.", "Students opposed the policy."])
+    results = detector.detect_batch(
+        ["The workers protested.", "Students opposed the policy."]
+    )
     assert len(results) == 2
     assert results[0][0]["span"] == "workers"
     assert results[1][0]["span"] == "students"
