@@ -12,6 +12,8 @@ import torch.nn.functional as F
 from torch import Tensor
 import matplotlib.pyplot as plt
 from .utils import to_dataframe
+from .exceptions import InputTypeError, InputValueError, ModelLoadError
+from ._validation import validate_device, validate_str_list
 from typing import Any
 
 
@@ -116,17 +118,33 @@ class GroupMentionClusterer:
             mentions: A list of social group mention strings to cluster.
             device: The device to run inference on. Either ``cpu``, ``cuda``,
                 or ``mps``.
+
+        Raises:
+            InputTypeError: If ``mentions`` is not a list of strings, or
+                ``device`` is not a string.
+            InputValueError: If ``mentions`` is empty, or ``device`` is not
+                a supported device type.
+            ModelLoadError: If the tokenizer, model, or checkpoint fails to load.
         """
+        validate_str_list(mentions, "mentions")
+        if not mentions:
+            raise InputValueError("mentions must not be empty.")
+        validate_device(device)
+
         self.mentions = mentions
         self.device = torch.device(device)
 
-        # construct the model class
-        self.tokenizer = AutoTokenizer.from_pretrained(self._REPO_ID)
-        self.model = ModelMask(tokenizer=self.tokenizer)
+        # construct the model class and load all fine-tuned weights
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(self._REPO_ID)
+            self.model = ModelMask(tokenizer=self.tokenizer)
+            checkpoint_path = hf_hub_download(self._REPO_ID, "model.safetensors")
+            self.model.load_state_dict(load_file(checkpoint_path))
+        except Exception as e:
+            raise ModelLoadError(
+                f"Failed to load group mention clustering model '{self._REPO_ID}': {e}"
+            ) from e
 
-        # load all fine-tuned weigths inside the model
-        checkpoint_path = hf_hub_download(self._REPO_ID, "model.safetensors")
-        self.model.load_state_dict(load_file(checkpoint_path))
         self.model.to(self.device)
         self.model.eval()
 
@@ -192,15 +210,43 @@ class GroupMentionClusterer:
             A tuple of the best k and a list of scores for each evaluated k.
 
         Raises:
-            ValueError: If ``metric='nmi'`` and ``dictionary_df`` is not provided.
+            InputTypeError: If ``k_range`` is not a tuple of two ints.
+            InputValueError: If ``metric`` is not ``silhouette`` or ``nmi``;
+                if ``metric='nmi'`` and ``dictionary_df`` is not provided; or
+                if ``k_range`` is out of bounds (min below 2, min above max,
+                or max above the number of mentions).
         """
+        if metric not in ("silhouette", "nmi"):
+            raise InputValueError(
+                f"Unsupported metric '{metric}'. Expected 'silhouette' or 'nmi'."
+            )
+        if metric == "nmi" and dictionary_df is None:
+            raise InputValueError("dictionary_df is required when metric='nmi'")
+
         # compute the embeddings
         embeddings = self.embed().numpy()
 
+        if (
+            not isinstance(k_range, tuple)
+            or len(k_range) != 2
+            or not all(isinstance(k, int) and not isinstance(k, bool) for k in k_range)
+        ):
+            raise InputTypeError("k_range must be a tuple of two ints (min_k, max_k).")
+        min_k, max_k = k_range
+        if min_k < 2:
+            raise InputValueError(f"k_range minimum must be at least 2, got {min_k}.")
+        if min_k > max_k:
+            raise InputValueError(
+                f"k_range minimum ({min_k}) must not exceed its maximum ({max_k})."
+            )
+        if max_k > embeddings.shape[0]:
+            raise InputValueError(
+                f"k_range maximum ({max_k}) cannot exceed the number of mentions "
+                f"({embeddings.shape[0]})."
+            )
+
         # precompute dictionary matches if NMI is requested
         if metric == "nmi":
-            if dictionary_df is None:
-                raise ValueError("dictionary_df is required when metric='nmi'")
             category_regex, group_lookup = _create_category_regex(dictionary_df)
             matches = [
                 _match_dictionary(category_regex, group_lookup, m)
@@ -211,7 +257,7 @@ class GroupMentionClusterer:
 
         # loop through potential ks, create k-means clustering and compute either silhouette or NMI-score
         scores = {}
-        for k in range(k_range[0], k_range[1] + 1):
+        for k in range(min_k, max_k + 1):
             labels = KMeans(n_clusters=k, random_state=42, n_init="auto").fit_predict(
                 embeddings
             )
@@ -253,15 +299,31 @@ class GroupMentionClusterer:
         Returns:
             A list of dicts with keys ``mention`` and ``cluster_id``,
             or a DataFrame if ``as_df=True``.
+
+        Raises:
+            InputTypeError: If ``n_clusters`` is not an int.
+            InputValueError: If ``n_clusters`` is not between 1 and the
+                number of mentions.
         """
         embeddings = self.embed().numpy()
+
+        if not isinstance(n_clusters, int) or isinstance(n_clusters, bool):
+            raise InputTypeError(
+                f"Expected an int for n_clusters, got {type(n_clusters).__name__}."
+            )
+        if not (1 <= n_clusters <= embeddings.shape[0]):
+            raise InputValueError(
+                f"n_clusters must be between 1 and the number of mentions "
+                f"({embeddings.shape[0]}), got {n_clusters}."
+            )
 
         # run k-means clustering and store the cluster ids paired with the mention
         labels = KMeans(
             n_clusters=n_clusters, random_state=42, n_init="auto"
         ).fit_predict(embeddings)
         results = [
-            {"mention": m, "cluster_id": int(label)} for m, label in zip(self.mentions, labels)
+            {"mention": m, "cluster_id": int(label)}
+            for m, label in zip(self.mentions, labels)
         ]
         return to_dataframe(results) if as_df else results
 

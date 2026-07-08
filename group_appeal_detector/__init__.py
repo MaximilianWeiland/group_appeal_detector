@@ -5,6 +5,12 @@ from .group_mention_detection import GroupMentionDetector
 from .stance_classification import StanceClassifier
 from .clustering import GroupMentionClusterer as GroupMentionClusterer
 from .utils import to_dataframe
+from .exceptions import (
+    GroupAppealDetectorError as GroupAppealDetectorError,
+    InputTypeError as InputTypeError,
+    InputValueError as InputValueError,
+    ModelLoadError as ModelLoadError,
+)
 
 # ignore huggingface warnings
 logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
@@ -16,7 +22,12 @@ class GroupAppealDetector:
 
         Args:
             device: The device to run inference on. Either ``cpu``, ``cuda``,
-                or ``mps``.
+                or ``mps`` (optionally suffixed with an index, e.g. ``cuda:0``).
+
+        Raises:
+            InputTypeError: If ``device`` is not a string.
+            InputValueError: If ``device`` is not a supported device type.
+            ModelLoadError: If any of the underlying models fail to load.
         """
         self._mention_detector = GroupMentionDetector(device=device)
         self._stance_classifier = StanceClassifier(device=device)
@@ -31,7 +42,7 @@ class GroupAppealDetector:
             A list of dicts with keys ``span``, ``start``, and ``end``.
 
         Raises:
-            TypeError: If ``text`` is not a string.
+            InputTypeError: If ``text`` is not a string.
         """
         return [
             {"span": m["word"], "start": m["start"], "end": m["end"]}
@@ -51,6 +62,11 @@ class GroupAppealDetector:
         Returns:
             A nested list of dicts (one list per text) with keys ``span``,
             ``start``, and ``end``, or a DataFrame if ``as_df=True``.
+
+        Raises:
+            InputTypeError: If ``texts`` is not a list of strings, or
+                ``batch_size`` is not an int.
+            InputValueError: If ``batch_size`` is not positive.
         """
         results = [
             [
@@ -76,7 +92,7 @@ class GroupAppealDetector:
             per-class probabilities).
 
         Raises:
-            TypeError: If ``text`` or ``target_group`` is not a string.
+            InputTypeError: If ``text`` or ``target_group`` is not a string.
         """
         predicted_stance, stance_probs = self._stance_classifier.classify(
             text, target_group
@@ -96,6 +112,11 @@ class GroupAppealDetector:
         Returns:
             A list of dicts with keys ``predicted_stance`` and ``stance_probs``,
             or a DataFrame if ``as_df=True``.
+
+        Raises:
+            InputTypeError: If ``pairs`` is not a list of ``(text, target_group)``
+                string tuples, or ``batch_size`` is not an int.
+            InputValueError: If ``batch_size`` is not positive.
         """
         results = [
             {"predicted_stance": stance, "stance_probs": probs}
@@ -116,7 +137,7 @@ class GroupAppealDetector:
             and ``stance_probs``.
 
         Raises:
-            TypeError: If ``text`` is not a string.
+            InputTypeError: If ``text`` is not a string.
         """
         results = []
 
@@ -148,6 +169,11 @@ class GroupAppealDetector:
             A nested list of dicts (one list per text) with keys ``span``,
             ``start``, ``end``, ``stance``, and ``stance_probs``, or a
             DataFrame if ``as_df=True``.
+
+        Raises:
+            InputTypeError: If ``texts`` is not a list of strings, or
+                ``batch_size`` is not an int.
+            InputValueError: If ``batch_size`` is not positive.
         """
         # detect all mentions first and then classify stances toward all of them
         all_mentions = self.detect_mentions_batch(texts, batch_size=batch_size)

@@ -1,25 +1,48 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
+from .exceptions import ModelLoadError
+from ._validation import (
+    validate_device,
+    validate_pairs,
+    validate_positive_int,
+    validate_str,
+)
+
 
 class StanceClassifier:
     _STANCES = ["positive", "negative", "neutral"]
+    _MODEL_ID = "maxwlnd/socialgroup_stance_classification_nli"
 
     def __init__(self, device: str = "cpu"):
-        model_id = "maxwlnd/socialgroup_stance_classification_nli"
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-        self.model = AutoModelForSequenceClassification.from_pretrained(model_id)
+        """Initialises the classifier by loading the NLI-based stance model.
+
+        Args:
+            device: The device to run inference on. Either ``cpu``, ``cuda``,
+                or ``mps`` (optionally suffixed with an index, e.g. ``cuda:0``).
+
+        Raises:
+            InputTypeError: If ``device`` is not a string.
+            InputValueError: If ``device`` is not a supported device type.
+            ModelLoadError: If the tokenizer or model fails to load.
+        """
+        validate_device(device)
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(self._MODEL_ID)
+            self.model = AutoModelForSequenceClassification.from_pretrained(
+                self._MODEL_ID
+            )
+        except Exception as e:
+            raise ModelLoadError(
+                f"Failed to load stance classification model '{self._MODEL_ID}': {e}"
+            ) from e
         self.device = torch.device(device)
         self.model.to(self.device)
 
     def classify(self, text: str, target_group: str) -> tuple[str, dict[str, float]]:
-        # raise TypeError if either text or target group are not a string
-        if not isinstance(text, str):
-            raise TypeError(f"Expected a string for text, got {type(text).__name__}.")
-        if not isinstance(target_group, str):
-            raise TypeError(
-                f"Expected a string for target_group, got {type(target_group).__name__}."
-            )
+        # raise InputTypeError if either text or target group are not a string
+        validate_str(text, "text")
+        validate_str(target_group, "target_group")
 
         # construct hypotheses for each stance class
         hypotheses = [
@@ -53,7 +76,15 @@ class StanceClassifier:
         """
         Classify stance for a list of (text, target_group) pairs.
         Each pair produces 3 NLI inputs, so effective batch size is batch_size * 3.
+
+        Raises:
+            InputTypeError: If ``pairs`` is not a list of ``(text, target_group)``
+                string tuples, or ``batch_size`` is not an int.
+            InputValueError: If ``batch_size`` is not positive.
         """
+        validate_pairs(pairs, "pairs")
+        validate_positive_int(batch_size, "batch_size")
+
         # loop over all pairs inside the batch
         results = []
         for i in range(0, len(pairs), batch_size):
