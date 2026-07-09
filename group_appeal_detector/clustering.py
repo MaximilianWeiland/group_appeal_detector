@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from .utils import to_dataframe
 from .exceptions import InputTypeError, InputValueError, ModelLoadError
 from ._validation import validate_device, validate_str_list
@@ -297,8 +298,10 @@ class GroupMentionClusterer:
             as_df: If ``True``, returns a pandas DataFrame instead of a list.
 
         Returns:
-            A list of dicts with keys ``mention`` and ``cluster_id``,
-            or a DataFrame if ``as_df=True``.
+            A list of dicts with keys ``mention``, ``cluster_id``, and
+            ``distance_to_centroid`` (each point's Euclidean distance to
+            its assigned cluster's centroid), or a DataFrame if
+            ``as_df=True``.
 
         Raises:
             InputTypeError: If ``n_clusters`` is not an int.
@@ -318,14 +321,86 @@ class GroupMentionClusterer:
             )
 
         # run k-means clustering and store the cluster ids paired with the mention
-        labels = KMeans(
-            n_clusters=n_clusters, random_state=42, n_init="auto"
-        ).fit_predict(embeddings)
+        kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init="auto")
+        labels = kmeans.fit_predict(embeddings)
+        
+        # euclidean distance to every centroid, then keep only the one for the assigned cluster
+        distances = kmeans.transform(embeddings)[np.arange(len(labels)), labels]
         results = [
-            {"mention": m, "cluster_id": int(label)}
-            for m, label in zip(self.mentions, labels)
+            {"mention": m, "cluster_id": int(label), "distance_to_centroid": float(dist)}
+            for m, label, dist in zip(self.mentions, labels, distances)
         ]
         return to_dataframe(results) if as_df else results
+
+
+    def visualize_clusters_boxplot(
+            self,
+            cluster_df: pd.DataFrame,
+            clusters: list[int] | None = None,
+            cluster_col: str = 'cluster_id',
+            distance_col: str = 'distance_to_centroid',
+            mention_col: str = 'mention'
+    ) -> None:
+        """Plots a Plotly boxplot of each cluster's distances to its centroid.
+
+        Args:
+            cluster_df: DataFrame containing cluster, distance, and mention
+                columns, e.g. the output of ``cluster(as_df=True)``.
+            clusters: Cluster ids to include. Defaults to all unique values
+                found in ``cluster_col``, sorted.
+            cluster_col: Name of the column holding cluster ids.
+            distance_col: Name of the column holding each point's distance
+                to its cluster centroid.
+            mention_col: Name of the column holding the mention text, shown
+                on hover.
+
+        Returns:
+            None
+        """
+        if clusters is None:
+            clusters = sorted(cluster_df[cluster_col].unique())
+
+        fig = go.Figure(layout=dict(width=800, height=600))
+
+        for cid in clusters:
+            cluster_data = cluster_df[cluster_df[cluster_col] == cid]
+            y_values = cluster_data[distance_col].values
+            hover_texts = cluster_data[mention_col].values
+
+            fig.add_trace(go.Box(
+                y=y_values,
+                name=f'Cluster {cid}',
+                boxpoints='all',
+                jitter=0.3,
+                whiskerwidth=0.2,
+                marker=dict(size=3),
+                line=dict(width=1),
+                text=hover_texts,
+                hovertemplate='%{text}<br>%{y:.3f}<extra></extra>'
+            ))
+        
+        fig.update_layout(
+            title=dict(
+                text="Clustered Social Group Mentions with Euclidean Distance to Centroid",
+                x=0.5
+            ),
+            yaxis=dict(
+                autorange=True,
+                showgrid=True,
+                zeroline=True,
+                gridcolor='rgb(255, 255, 255)',
+                gridwidth=1,
+                zerolinecolor='rgb(255, 255, 255)',
+                zerolinewidth=2,
+                title=f"Euclidean distance to centroid"
+            ),
+            paper_bgcolor='rgb(243, 243, 243)',
+            plot_bgcolor='rgb(243, 243, 243)',
+            margin=dict(l=40, r=30, t=80, b=100),
+            showlegend=False
+        )
+        
+        fig.show()
 
 
 def _normalize_group_name(name: str) -> str:
