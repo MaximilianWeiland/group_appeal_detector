@@ -80,44 +80,6 @@ def test_match_dictionary_wildcard_prefix():
     assert found is True
 
 
-# --- ModelMask._extract_mask_embedding ---
-
-
-@pytest.fixture
-def model_mask():
-    model = ModelMask.__new__(ModelMask)
-    model.mask_id = 103
-    return model
-
-
-def test_extract_mask_embedding_averages_mask_positions(model_mask):
-    # Two mask tokens at positions 1 and 2
-    input_ids = torch.tensor([[0, 103, 103, 0]])
-    hidden = torch.zeros(1, 4, 8)
-    hidden[0, 1] = torch.ones(8) * 2.0
-    hidden[0, 2] = torch.ones(8) * 4.0
-    result = model_mask._extract_mask_embedding(input_ids, hidden)
-    expected = torch.ones(8) * 3.0
-    assert torch.allclose(result[0], expected)
-
-
-def test_extract_mask_embedding_falls_back_to_first_token(model_mask):
-    # No mask tokens
-    input_ids = torch.tensor([[0, 1, 2, 3]])
-    hidden = torch.zeros(1, 4, 8)
-    hidden[0, 0] = torch.ones(8) * 5.0
-    result = model_mask._extract_mask_embedding(input_ids, hidden)
-    expected = torch.ones(8) * 5.0
-    assert torch.allclose(result[0], expected)
-
-
-def test_extract_mask_embedding_output_shape(model_mask):
-    input_ids = torch.tensor([[0, 103, 0], [103, 0, 0]])
-    hidden = torch.randn(2, 3, 8)
-    result = model_mask._extract_mask_embedding(input_ids, hidden)
-    assert result.shape == (2, 8)
-
-
 # --- GroupMentionClusterer ---
 
 

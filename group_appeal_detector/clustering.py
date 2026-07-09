@@ -21,11 +21,11 @@ from typing import Any
 class ModelMask(nn.Module):
     """
     Encoder model for contrastive learning that extracts representations
-    from [MASK] token positions in a pretrained Transformer model.
+    from the [MASK] token position in a pretrained Transformer model.
 
-    The model encodes input sequences, averages hidden states at all [MASK]
-    positions (if present), projects them into a lower-dimensional space,
-    and applies L2 normalization.
+    The model encodes input sequences, takes the hidden state at each
+    sequence's single [MASK] position, projects it into a lower-dimensional
+    space, and applies L2 normalization.
     """
 
     def __init__(
@@ -53,38 +53,6 @@ class ModelMask(nn.Module):
         self.hidden_size: int = self.encoder.config.hidden_size
         self.projector: nn.Module = nn.Sequential(nn.Linear(self.hidden_size, proj_dim))
 
-    def _extract_mask_embedding(
-        self, input_ids: Tensor, hidden_states: Tensor
-    ) -> Tensor:
-        """
-        Extracts a sentence-level embedding by using the hidden state at the [MASK] token position.
-        If several [MASK] tokens, it averages the hidden states at all positions.
-
-        Args:
-            input_ids (Tensor): Token IDs of shape (batch_size, seq_len).
-            hidden_states (Tensor): Hidden states of shape (batch_size, seq_len, hidden_size).
-
-        Returns:
-            Tensor: Mask-based embeddings of shape (batch_size, hidden_size).
-        """
-        mask_positions = input_ids == self.mask_id
-        batch_size = input_ids.size(0)
-
-        outputs: list[Tensor] = []
-
-        # loop through rows inside the batch and find all positions of MASK tokens
-        for i in range(batch_size):
-            positions = mask_positions[i]
-            # take the mean of hidden states at MASK positions
-            if positions.any():
-                emb = hidden_states[i][positions].mean(dim=0)
-            # if no MASK tokens, take the hidden state of the first token
-            else:
-                emb = hidden_states[i][0]
-            outputs.append(emb)
-
-        return torch.stack(outputs)
-
     def encode(
         self, input_ids: Tensor, attention_mask: Tensor
     ) -> tuple[Tensor, Tensor]:
@@ -102,7 +70,12 @@ class ModelMask(nn.Module):
         """
         # run tokenized text through the BERT model and the linear projection head
         outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
-        h: Tensor = self._extract_mask_embedding(input_ids, outputs.last_hidden_state)
+
+        # pull out the hidden state at each sequence's single [MASK] position
+        batch_idx, seq_idx = (input_ids == self.mask_id).nonzero(as_tuple=True)
+        h: Tensor = outputs.last_hidden_state[batch_idx, seq_idx]
+
+        # run mask embeddings through the projector and normalize
         z: Tensor = self.projector(h)
         z: Tensor = F.normalize(z, p=2, dim=1)
 
