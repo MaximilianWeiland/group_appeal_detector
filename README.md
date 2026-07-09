@@ -147,6 +147,12 @@ results_df = clusterer.cluster(n_clusters=best_k, as_df=True)
 results_df.head()
 ```
 
+### Visualization
+
+The development of silhoutte or NMI scores over an increasing number of clusters `k`can be easily visualized by setting `visualize = True` in the `find_optimal_k()` This directly leads to a graph similar to this one. Inspecting the scores visually can be especially helpful to detect plateaus in performance scores which would remain unnoticed if one only concentrates on the highest value.
+
+[!Development of Silhoutte Score Across K](imgs/silscore_development.png)
+
 ## Conceptual Background
 
 The definitions of a social group and a social group appeal used for annotating the training data package are largely inspired by [Lena Maria Huber and Alona O. Dolinsky](https://osf.io/preprints/osf/szaqw_v1) and [Will Horne, Alona O. Dolinsky and Lena Maria Huber](https://osf.io/preprints/osf/fp2h3_v3).
