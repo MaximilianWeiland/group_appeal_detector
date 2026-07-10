@@ -153,6 +153,20 @@ The development of silhoutte or NMI scores over an increasing number of clusters
 
 [!Development of Silhoutte Score Across K](imgs/silscore_development.png)
 
+When having decided on one cluster structure, one can visualize the clusters' composition by plotting the Euclidean distance of all group appeals' embeddings to their respective cluster centroid as boxplots. Note that because the embeddings have been L2-normalized the Euclidean distance directly corresponds to the Cosine similarity. For drawing the boxplots the plotly package is used which allows for an interactive examination of all data points (i.e. looking at the mentions' text and the exact distance). This enables to inspect the clustering quality and to assign each cluster a meaningful name if desired.
+
+```python
+clusterer.visualize_clusters_boxplot(
+    cluster_df = results_df,
+    cluster_col = "cluster_id",
+    distance_col = "distance_to_centroid",
+    mention_col = "mention"
+)
+```
+
+[!Visualization of Clusters as Boxplots](imgs/visualization_boxplots.png)
+
+
 ## Conceptual Background
 
 The definitions of a social group and a social group appeal used for annotating the training data package are largely inspired by [Lena Maria Huber and Alona O. Dolinsky](https://osf.io/preprints/osf/szaqw_v1) and [Will Horne, Alona O. Dolinsky and Lena Maria Huber](https://osf.io/preprints/osf/fp2h3_v3).
