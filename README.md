@@ -151,7 +151,7 @@ results_df.head()
 
 The development of silhoutte or NMI scores over an increasing number of clusters `k`can be easily visualized by setting `visualize = True` in the `find_optimal_k()` This directly leads to a graph similar to this one. Inspecting the scores visually can be especially helpful to detect plateaus in performance scores which would remain unnoticed if one only concentrates on the highest value.
 
-![Development of Silhoutte Score Across K](imgs/silscore_development.png)
+![Development of Silhoutte Score Across K](https://raw.githubusercontent.com/MaximilianWeiland/group_appeal_detector/main/imgs/silscore_development.png)
 
 When having decided on one cluster structure, one can visualize the clusters' composition by plotting the Euclidean distance of all group appeals' embeddings to their respective cluster centroid as boxplots. Note that because the embeddings have been L2-normalized the Euclidean distance directly corresponds to the Cosine similarity. For drawing the boxplots the plotly package is used which allows for an interactive examination of all data points (i.e. looking at the mentions' text and the exact distance). This enables to inspect the clustering quality and to assign each cluster a meaningful name if desired.
 
@@ -164,7 +164,7 @@ clusterer.visualize_clusters_boxplot(
 )
 ```
 
-![Visualization of Clusters as Boxplots](imgs/visualization_boxplots.png)
+![Visualization of Clusters as Boxplots](https://raw.githubusercontent.com/MaximilianWeiland/group_appeal_detector/main/imgs/visualization_boxplots.png)
 
 
 ## Conceptual Background
