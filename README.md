@@ -167,6 +167,40 @@ clusterer.visualize_clusters_boxplot(
 ![Visualization of Clusters as Boxplots](https://raw.githubusercontent.com/MaximilianWeiland/group_appeal_detector/main/imgs/visualization_boxplots.png)
 
 
+## Command-Line Interface
+
+For quick, one-off analyses without writing Python, the package also installs a `group-appeal-detector` command. Run `group-appeal-detector --help` or `group-appeal-detector <command> --help` to see all available subcommands and options.
+
+### Detecting Mentions, Stance, or Both
+
+Detect group mentions, classify the stance toward a group, or do both in one call for a single input passed directly on the command line:
+
+```bash
+group-appeal-detector detect "Our party supports the interests of young people and working families."
+group-appeal-detector detect-mentions "Our party supports the interests of young people and working families."
+group-appeal-detector classify-stance "We must protect the rights of farmers." farmers
+```
+
+For batches, pass a plain-text file with one input per line via `--file` (a CSV with `text` and `target_group` columns for `classify-stance`), and control the `--batch-size` and `--device cpu|cuda|mps` just like in the Python API:
+
+```bash
+group-appeal-detector detect --file sentences.txt --batch-size 16 --device cuda
+group-appeal-detector classify-stance --file pairs.csv --format csv -o results.csv
+```
+
+By default, results are printed to stdout as JSON. Pass `--format csv` to get a flat table instead (matching `as_df=True` in the Python API), and `-o`/`--output PATH` to write the result to a file instead of stdout.
+
+### Clustering
+
+Cluster a list of mentions into categories, or find the optimal number of clusters first. Mentions can be passed as positional arguments or, for larger sets, via `--file` (one mention per line):
+
+```bash
+group-appeal-detector cluster women farmers "young people" --n-clusters 2 --format csv -o clusters.csv
+group-appeal-detector find-optimal-k --file mentions.txt --k-min 2 --k-max 20 --metric silhouette
+```
+
+Use `--metric nmi --dictionary social_groups.csv` to determine the optimal `k` via the NMI score against a reference dictionary instead, and add `--visualize` to plot the metric's development across `k`.
+
 ## Conceptual Background
 
 The definitions of a social group and a social group appeal used for annotating the training data package are largely inspired by [Lena Maria Huber and Alona O. Dolinsky](https://osf.io/preprints/osf/szaqw_v1) and [Will Horne, Alona O. Dolinsky and Lena Maria Huber](https://osf.io/preprints/osf/fp2h3_v3).

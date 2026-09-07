@@ -491,8 +491,8 @@ wheels = [
 
 [[package]]
 name = "group-appeal-detector"
-version = "0.1.4"
-source = { virtual = "." }
+version = "0.2.0"
+source = { editable = "." }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "matplotlib" },

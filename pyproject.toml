@@ -1,6 +1,10 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "group-appeal-detector"
-version = "0.2.0"
+version = "0.3.0"
 description = "Automated detection of social group appeals in text"
 authors = [{ name = "Maximilian Weiland" }]
 readme = "README.md"
@@ -33,6 +37,9 @@ dev = [
 
 [project.urls]
 Repository = "https://github.com/MaximilianWeiland/group_appeal_detector"
+
+[project.scripts]
+group-appeal-detector = "group_appeal_detector.cli:main"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
